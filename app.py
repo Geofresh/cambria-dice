@@ -4,7 +4,7 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_talisman import Talisman
 from flask_login import LoginManager, login_required, current_user
-from models import db, User
+from models import db, User, Roll
 from auth import auth, init_admin
 import logging
 import json
@@ -37,9 +37,6 @@ app.register_blueprint(auth)
 
 logging.basicConfig(level=logging.DEBUG)
 
-# Store roll history in memory (consider using a database for production)
-roll_history = []
-
 # Add rate limiting
 limiter = Limiter(
     app=app,
@@ -63,6 +60,8 @@ Talisman(app,
 
 @app.route('/')
 def index():
+    # Get rolls in descending order by timestamp
+    roll_history = Roll.query.order_by(Roll.timestamp.desc()).limit(50).all()
     return render_template('index.html', 
                          roll_history=roll_history, 
                          is_admin=current_user.is_authenticated and current_user.is_admin)
@@ -92,26 +91,26 @@ def generate():
         numbers, proofs = generate_random_numbers(max_range, count)
         app.logger.debug(f"Generated numbers: {numbers}")
         
-        # Create roll history entry
-        timestamp = datetime.fromtimestamp(proofs[0]['timestamp'])
-        roll_id = len(roll_history) + 1
-        history_entry = {
-            'id': roll_id,
-            'timestamp': timestamp,
-            'numbers': numbers,
-            'max_range': max_range,
-            'count': count,
-            'proofs': proofs
-        }
-        roll_history.append(history_entry)
+        # Create new roll in database
+        roll = Roll(
+            max_range=max_range,
+            count=count,
+            user_id=current_user.id,
+            timestamp=datetime.fromtimestamp(proofs[0]['timestamp'])
+        )
+        roll.set_numbers(numbers)
+        roll.set_proofs(proofs)
+        
+        db.session.add(roll)
+        db.session.commit()
         
         response_data = {
             'numbers': numbers,
             'success': True,
             'count': count,
             'maxRange': max_range,
-            'rollId': roll_id,
-            'timestamp': timestamp.strftime('%Y-%m-%d %H:%M:%S')
+            'rollId': roll.id,
+            'timestamp': roll.timestamp.strftime('%Y-%m-%d %H:%M:%S')
         }
         app.logger.debug(f"Sending response: {response_data}")
         return jsonify(response_data)
@@ -125,9 +124,7 @@ def generate():
 @app.route('/download/<int:roll_id>')
 def download_proof(roll_id):
     try:
-        roll = next((r for r in roll_history if r['id'] == roll_id), None)
-        if not roll:
-            return "Roll not found", 404
+        roll = Roll.query.get_or_404(roll_id)
 
         # Create CSV in memory
         output = io.StringIO()
@@ -135,14 +132,16 @@ def download_proof(roll_id):
         
         # Write header
         writer.writerow(['Roll Information'])
-        writer.writerow(['Timestamp', roll['timestamp'].strftime('%Y-%m-%d %H:%M:%S')])
-        writer.writerow(['Maximum Range', roll['max_range']])
-        writer.writerow(['Number of Rolls', roll['count']])
+        writer.writerow(['Timestamp', roll.timestamp.strftime('%Y-%m-%d %H:%M:%S')])
+        writer.writerow(['Maximum Range', roll.max_range])
+        writer.writerow(['Number of Rolls', roll.count])
         writer.writerow([])
         writer.writerow(['Number', 'Timestamp', 'Nonce', 'Hash'])
         
         # Write each number and its proof
-        for number, proof in zip(roll['numbers'], roll['proofs']):
+        numbers = roll.get_numbers()
+        proofs = roll.get_proofs()
+        for number, proof in zip(numbers, proofs):
             writer.writerow([
                 number,
                 proof['timestamp'],
@@ -165,15 +164,12 @@ def download_proof(roll_id):
 @app.route('/verify/<int:roll_id>')
 def verify_roll(roll_id):
     try:
-        roll = next((r for r in roll_history if r['id'] == roll_id), None)
-        if not roll:
-            return jsonify({
-                'error': 'Roll not found',
-                'success': False
-            }), 404
+        roll = Roll.query.get_or_404(roll_id)
+        numbers = roll.get_numbers()
+        proofs = roll.get_proofs()
 
         verifications = []
-        for number, proof in zip(roll['numbers'], roll['proofs']):
+        for number, proof in zip(numbers, proofs):
             # Verify each number
             is_valid = verify_proof(proof)
             verification = {

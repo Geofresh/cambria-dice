@@ -434,22 +434,114 @@
             flex: 1;
             max-width: 200px;
         }
+        .admin-banner {
+            background-color: rgba(26, 15, 10, 0.8);
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 1rem;
+        }
+        .admin-banner span {
+            color: #90ee90;
+            font-weight: bold;
+        }
+        .btn-logout {
+            background: none;
+            border: 1px solid #ff6b6b;
+            color: #ff6b6b;
+            padding: 4px 12px;
+            border-radius: 3px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+        .btn-logout:hover {
+            background-color: #ff6b6b;
+            color: #2c1810;
+        }
+        .btn-login-link {
+            background: none;
+            border: 1px solid #d4af37;
+            color: #d4af37;
+            padding: 4px 12px;
+            border-radius: 3px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+        .btn-login-link:hover {
+            background-color: #d4af37;
+            color: #2c1810;
+        }
+        .login-prompt {
+            text-align: center;
+            margin-top: 1rem;
+            color: #ff6b6b;
+            font-style: italic;
+        }
+        input:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            background-color: #6b5721;
+            border-color: #6b5721;
+        }
+        .btn-manage {
+            background: none;
+            border: 1px solid #90ee90;
+            color: #90ee90;
+            padding: 4px 12px;
+            border-radius: 3px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+        .btn-manage:hover {
+            background-color: #90ee90;
+            color: #2c1810;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <img src="{{ url_for('static', filename='images/cambria-logo.png') }}" alt="Cambria Logo" class="logo">
+        {% if is_admin %}
+        <div class="admin-banner">
+            <span>{% if current_user.is_super_admin %}Super Admin{% else %}Admin{% endif %}</span>
+            {% if current_user.is_super_admin %}
+            <a href="{{ url_for('auth.manage_users') }}" class="btn-manage">Manage Users</a>
+            {% endif %}
+            <a href="{{ url_for('auth.logout') }}" class="btn-logout">Logout</a>
+        </div>
+        {% else %}
+        <div class="admin-banner">
+            <a href="{{ url_for('auth.login') }}" class="btn-login-link">Admin Login</a>
+        </div>
+        {% endif %}
         <div class="input-container">
             <div class="input-group">
                 <label for="maxRange">Maximum Number:</label>
-                <input type="number" id="maxRange" value="1" min="1" step="1">
+                <input type="number" id="maxRange" value="1" min="1" step="1" {% if not is_admin %}disabled{% endif %}>
             </div>
             <div class="input-group">
                 <label for="count">Number of Rolls:</label>
-                <input type="number" id="count" value="1" min="1" max="100" step="1">
+                <input type="number" id="count" value="1" min="1" max="100" step="1" {% if not is_admin %}disabled{% endif %}>
             </div>
         </div>
-        <button class="btn" onclick="generateNumbers()" id="generateBtn">Roll the Dice</button>
+        <button class="btn" onclick="generateNumbers()" id="generateBtn" {% if not is_admin %}disabled{% endif %}>
+            {% if is_admin %}Roll the Dice{% else %}Login Required{% endif %}
+        </button>
+        {% if not is_admin %}
+        <div class="login-prompt">
+            <p>Please login as an administrator to generate rolls.</p>
+        </div>
+        {% endif %}
         <div id="result">
             <p>Click the button to generate your chosen number of random numbers between 1 and your maximum</p>
             <div class="number-display" id="numbers"></div>
@@ -473,13 +565,13 @@
                     </tr>
                 </thead>
                 <tbody id="historyTableBody">
-                    {% for roll in roll_history|reverse %}
+                    {% for roll in roll_history %}
                     <tr>
                         <td>{{ roll.id }}</td>
                         <td>{{ roll.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
                         <td>1-{{ roll.max_range }}</td>
                         <td>{{ roll.count }}</td>
-                        <td class="numbers-cell" data-numbers="{{ roll.numbers|join(', ') }}">{{ roll.numbers|join(', ') }}</td>
+                        <td class="numbers-cell" data-numbers="{{ roll.get_numbers()|join(', ') }}">{{ roll.get_numbers()|join(', ') }}</td>
                         <td class="action-cell">
                             <a href="{{ url_for('download_proof', roll_id=roll.id) }}" class="download-link">Download CSV</a>
                             <button onclick="openVerificationModal({{ roll.id }})" class="verify-button">Verify</button>
@@ -683,6 +775,10 @@
         }
 
         async function generateNumbers() {
+            if (!{{ is_admin|tojson }}) {
+                window.location.href = "{{ url_for('auth.login') }}";
+                return;
+            }
             const maxRange = parseInt(maxRangeInput.value);
             const count = parseInt(countInput.value);
             
@@ -735,11 +831,15 @@
                     });
                     resultText.textContent = `Generated ${count} number${count > 1 ? 's' : ''} between 1 and ${maxRange}`;
 
-                    // Add new row to history table
+                    // Add new row to history table at the top
                     const historyTableBody = document.getElementById('historyTableBody');
                     const newRow = document.createElement('tr');
                     newRow.innerHTML = createHistoryRow(data, maxRange, count);
-                    historyTableBody.insertBefore(newRow, historyTableBody.firstChild);
+                    if (historyTableBody.firstChild) {
+                        historyTableBody.insertBefore(newRow, historyTableBody.firstChild);
+                    } else {
+                        historyTableBody.appendChild(newRow);
+                    }
                 } else {
                     showError(data.error || 'Invalid response format');
                 }
@@ -808,12 +908,13 @@
 
         // Update the history table row creation
         function createHistoryRow(data, maxRange, count) {
+            const numbersStr = data.numbers.join(', ');
             return `
                 <td>${data.rollId}</td>
                 <td>${data.timestamp}</td>
                 <td>1-${maxRange}</td>
                 <td>${count}</td>
-                <td class="numbers-cell" data-numbers="${data.numbers.join(', ')}">${data.numbers.join(', ')}</td>
+                <td class="numbers-cell" data-numbers="${numbersStr}">${numbersStr}</td>
                 <td class="action-cell">
                     <a href="/download/${data.rollId}" class="download-link">Download CSV</a>
                     <button onclick="openVerificationModal(${data.rollId})" class="verify-button">Verify</button>
