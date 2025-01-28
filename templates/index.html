@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cambria Random Numbers</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap');
+        
+        body {
+            font-family: 'MedievalSharp', cursive;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            color: #d4af37;
+            background: url("{{ url_for('static', filename='images/waterfall.gif') }}") no-repeat center center fixed;
+            background-size: cover;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+        .container {
+            background-color: rgba(26, 15, 10, 0.95);
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            border: 2px solid #d4af37;
+            max-width: 600px;
+            width: 100%;
+            margin: 20px;
+            backdrop-filter: blur(5px);
+        }
+        .logo {
+            width: 280px;
+            height: auto;
+            display: block;
+            margin: 0 auto 3rem auto;
+            image-rendering: pixelated;
+        }
+        h1 {
+            color: #d4af37;
+            text-align: center;
+            margin-bottom: 2rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            font-size: 2.5rem;
+        }
+        .input-container {
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            margin-bottom: 3rem;
+            flex-wrap: wrap;
+            padding: 0 1rem;
+        }
+        .input-group {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .input-group label {
+            font-weight: bold;
+            color: #d4af37;
+            white-space: nowrap;
+            font-size: 1.2rem;
+        }
+        .input-group input {
+            padding: 8px 12px;
+            border: 2px solid #d4af37;
+            border-radius: 5px;
+            font-size: 1rem;
+            width: 100px;
+            text-align: center;
+            background-color: #2c1810;
+            color: #d4af37;
+            font-family: 'MedievalSharp', cursive;
+        }
+        .input-group input:focus {
+            outline: none;
+            box-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+        }
+        .btn {
+            background-color: #d4af37;
+            color: #2c1810;
+            border: none;
+            padding: 12px 36px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.3s;
+            display: block;
+            margin: 0 auto;
+            min-width: 200px;
+            font-family: 'MedievalSharp', cursive;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: 2px solid #d4af37;
+        }
+        .btn:hover {
+            background-color: #2c1810;
+            color: #d4af37;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+        }
+        .btn:disabled {
+            background-color: #6b5721;
+            border-color: #6b5721;
+            cursor: not-allowed;
+            transform: none;
+        }
+        #result {
+            margin-top: 2rem;
+            padding: 1rem;
+            border-radius: 5px;
+            text-align: center;
+            font-size: 1.2rem;
+        }
+        .number-display {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+        .number {
+            background-color: #2c1810;
+            padding: 1.5rem;
+            border-radius: 5px;
+            min-width: 60px;
+            text-align: center;
+            font-weight: bold;
+            color: #d4af37;
+            border: 2px solid #d4af37;
+            font-size: 1.5rem;
+            text-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+            transition: transform 0.3s;
+        }
+        .number.rolling {
+            animation: rollNumber 0.1s linear infinite;
+        }
+        @keyframes rollNumber {
+            0% {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 15px rgba(212, 175, 55, 0.5);
+            }
+            50% {
+                transform: translateY(2px);
+                box-shadow: 0 2px 5px rgba(212, 175, 55, 0.3);
+            }
+            100% {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 15px rgba(212, 175, 55, 0.5);
+            }
+        }
+        .number.appear {
+            animation: appearNumber 0.5s ease-out forwards;
+        }
+        @keyframes appearNumber {
+            0% {
+                transform: scale(1.2);
+                box-shadow: 0 0 30px rgba(212, 175, 55, 0.8);
+            }
+            100% {
+                transform: scale(1);
+                box-shadow: none;
+            }
+        }
+        .error {
+            color: #ff6b6b;
+            margin-top: 1rem;
+            text-align: center;
+        }
+        .number-wrapper {
+            position: relative;
+            display: inline-block;
+            overflow: visible;
+        }
+        .particle {
+            pointer-events: none;
+            position: absolute;
+            background: radial-gradient(circle at 30% 30%, #ffd700, #d4af37);
+            border-radius: 50%;
+            width: 8px;
+            height: 8px;
+            animation: particle 1.5s cubic-bezier(0.45, 0.05, 0.55, 0.95) forwards;
+            box-shadow: 0 0 10px rgba(212, 175, 55, 0.8);
+        }
+        @keyframes particle {
+            0% {
+                transform: scale(1.5) rotate(0deg);
+                opacity: 1;
+            }
+            20% {
+                transform: scale(1) rotate(90deg) translate(var(--tx1), var(--ty1));
+                opacity: 0.9;
+            }
+            40% {
+                transform: scale(0.8) rotate(180deg) translate(var(--tx2), var(--ty2));
+                opacity: 0.8;
+            }
+            60% {
+                transform: scale(0.7) rotate(270deg) translate(var(--tx3), var(--ty3));
+                opacity: 0.6;
+            }
+            80% {
+                transform: scale(0.5) rotate(360deg) translate(var(--tx4), var(--ty4));
+                opacity: 0.3;
+            }
+            100% {
+                transform: scale(0) rotate(420deg) translate(var(--tx5), var(--ty5));
+                opacity: 0;
+            }
+        }
+        .history-section {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 2px solid #d4af37;
+        }
+        .history-title {
+            text-align: center;
+            color: #d4af37;
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+        }
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            font-size: 1rem;
+            table-layout: fixed;
+        }
+        .history-table th,
+        .history-table td {
+            padding: 1rem 0.8rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+            vertical-align: middle;
+            line-height: 1.4;
+        }
+        .history-table th {
+            font-weight: bold;
+            color: #ffd700;
+        }
+        .history-table tr:hover {
+            background-color: rgba(212, 175, 55, 0.05);
+        }
+        /* Column widths */
+        .history-table th:nth-child(1) { width: 5%; }   /* Roll # */
+        .history-table th:nth-child(2) { width: 15%; }  /* Time */
+        .history-table th:nth-child(3) { width: 10%; }  /* Range */
+        .history-table th:nth-child(4) { width: 8%; }   /* Count */
+        .history-table th:nth-child(5) { width: 42%; }  /* Numbers */
+        .history-table th:nth-child(6) { width: 20%; }  /* Proof */
+
+        .numbers-cell {
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            position: relative;
+        }
+        .numbers-cell:hover::after {
+            content: attr(data-numbers);
+            position: fixed;
+            background-color: rgba(26, 15, 10, 0.98);
+            backdrop-filter: blur(10px);
+            border: 1px solid #d4af37;
+            border-radius: 4px;
+            padding: 1rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+            max-width: 400px;
+            word-wrap: break-word;
+            white-space: normal;
+            z-index: 1000;
+            color: #d4af37;
+            font-family: 'MedievalSharp', cursive;
+            left: 50%;
+            transform: translateX(-50%);
+            margin-top: 10px;
+        }
+        .action-cell {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            align-items: stretch;
+            padding: 0.5rem;
+        }
+        .download-link {
+            color: #ffd700;
+            text-decoration: none;
+            padding: 8px;
+            border: 1px solid #d4af37;
+            border-radius: 3px;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+            text-align: center;
+            display: block;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .verify-button {
+            background: none;
+            border: 1px solid #90ee90;
+            color: #90ee90;
+            padding: 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-family: 'MedievalSharp', cursive;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+            text-align: center;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .verify-button:hover {
+            background: #90ee90;
+            color: #2c1810;
+        }
+        .history-table td {
+            padding: 0.8rem;
+            vertical-align: middle;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: rgba(26, 15, 10, 0.98);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            border-radius: 10px;
+            border: 2px solid #d4af37;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+        }
+        .close-modal {
+            position: absolute;
+            right: 1rem;
+            top: 1rem;
+            color: #d4af37;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+        .close-modal:hover {
+            color: #ffd700;
+        }
+        .verification-list {
+            list-style: none;
+            padding: 0;
+            margin: 1rem 0;
+        }
+        .verification-item {
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 5px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        .verification-item.valid {
+            border-color: #90ee90;
+            background-color: rgba(144, 238, 144, 0.1);
+        }
+        .verification-item.invalid {
+            border-color: #ff6b6b;
+            background-color: rgba(255, 107, 107, 0.1);
+        }
+        .verification-status {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        .verification-status.valid {
+            color: #90ee90;
+        }
+        .verification-status.invalid {
+            color: #ff6b6b;
+        }
+        .verification-details {
+            font-family: monospace;
+            font-size: 0.9rem;
+            color: rgba(212, 175, 55, 0.8);
+            margin: 0.5rem 0;
+            word-break: break-all;
+        }
+        .help-button {
+            background: none;
+            border: 1px solid #d4af37;
+            color: #d4af37;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'MedievalSharp', cursive;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s;
+        }
+        .help-button:hover {
+            background: #d4af37;
+            color: #2c1810;
+        }
+        .verification-explanation {
+            color: #d4af37;
+            line-height: 1.6;
+            padding: 1rem;
+        }
+        .verification-explanation h3 {
+            color: #ffd700;
+            margin-top: 1.5rem;
+        }
+        .verification-explanation ul,
+        .verification-explanation ol {
+            margin: 1rem 0;
+            padding-left: 2rem;
+        }
+        .verification-explanation li {
+            margin: 0.5rem 0;
+        }
+        .help-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            gap: 1rem;
+        }
+        .help-button {
+            flex: 1;
+            max-width: 200px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="{{ url_for('static', filename='images/cambria-logo.png') }}" alt="Cambria Logo" class="logo">
+        <div class="input-container">
+            <div class="input-group">
+                <label for="maxRange">Maximum Number:</label>
+                <input type="number" id="maxRange" value="1" min="1" step="1">
+            </div>
+            <div class="input-group">
+                <label for="count">Number of Rolls:</label>
+                <input type="number" id="count" value="1" min="1" max="100" step="1">
+            </div>
+        </div>
+        <button class="btn" onclick="generateNumbers()" id="generateBtn">Roll the Dice</button>
+        <div id="result">
+            <p>Click the button to generate your chosen number of random numbers between 1 and your maximum</p>
+            <div class="number-display" id="numbers"></div>
+        </div>
+        
+        <div class="history-section">
+            <h2 class="history-title">Roll History</h2>
+            <div class="help-buttons">
+                <button onclick="openHowToVerifyModal()" class="help-button">How to verify rolls</button>
+                <button onclick="openHowGeneratedModal()" class="help-button">How are rolls generated?</button>
+            </div>
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>Roll #</th>
+                        <th>Time</th>
+                        <th>Range</th>
+                        <th>Count</th>
+                        <th>Numbers</th>
+                        <th>Proof</th>
+                    </tr>
+                </thead>
+                <tbody id="historyTableBody">
+                    {% for roll in roll_history|reverse %}
+                    <tr>
+                        <td>{{ roll.id }}</td>
+                        <td>{{ roll.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                        <td>1-{{ roll.max_range }}</td>
+                        <td>{{ roll.count }}</td>
+                        <td class="numbers-cell" data-numbers="{{ roll.numbers|join(', ') }}">{{ roll.numbers|join(', ') }}</td>
+                        <td class="action-cell">
+                            <a href="{{ url_for('download_proof', roll_id=roll.id) }}" class="download-link">Download CSV</a>
+                            <button onclick="openVerificationModal({{ roll.id }})" class="verify-button">Verify</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Verification Modal -->
+    <div id="verificationModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeVerificationModal()">&times;</span>
+            <h2 class="history-title">Verify Roll Proof</h2>
+            <div id="verificationResults"></div>
+        </div>
+    </div>
+
+    <!-- How to Verify Modal -->
+    <div id="howToVerifyModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeHowToVerifyModal()">&times;</span>
+            <h2 class="history-title">How Roll Verification Works</h2>
+            <div class="verification-explanation">
+                <h3>TL;DR:</h3>
+                <p>It's like signing a transaction on-chain - each roll gets its own unique hash that's permanently stored and can't be tampered with. Just like you can verify transactions on Etherscan, you can verify these rolls to prove they're legit and weren't manipulated after generation.</p>
+
+                <h3>Technical Details:</h3>
+                <ol>
+                    <li>Each generated number is combined with:
+                        <ul>
+                            <li>A timestamp (block time equivalent)</li>
+                            <li>A nonce</li>
+                        </ul>
+                    </li>
+                    <li>This combination is processed through SHA-256 (same hash function used in Bitcoin)</li>
+                    <li>The result is a unique hash that can't be reverse-engineered</li>
+                </ol>
+
+                <h3>Verification Options:</h3>
+                <ol>
+                    <li><strong>Quick Check:</strong> Click "Verify" to instantly validate any roll</li>
+                    <li><strong>Manual Check:</strong> Download the CSV file containing:
+                        <ul>
+                            <li>Original numbers</li>
+                            <li>Timestamps</li>
+                            <li>Nonces</li>
+                            <li>Hash values</li>
+                        </ul>
+                    </li>
+                </ol>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add new modal for generation explanation -->
+    <div id="howGeneratedModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeHowGeneratedModal()">&times;</span>
+            <h2 class="history-title">How Rolls Are Generated</h2>
+            <div class="verification-explanation">
+                <h3>TL;DR:</h3>
+                <p>Like mining for randomness - we use the same cryptographic tech. Each roll taps into a source of randomness that's as unpredictable as the next block hash.</p>
+
+                <h3>Technical Details:</h3>
+                <ol>
+                    <li>Each roll uses Python's secrets module:
+                        <ul>
+                            <li>Built on OS-level entropy pools</li>
+                            <li>Same security level as private key generation</li>
+                        </ul>
+                    </li>
+                    <li>The process ensures:
+                        <ul>
+                            <li>True randomness (not pseudo-random)</li>
+                            <li>Cryptographic security</li>
+                            <li>Uniform distribution</li>
+                        </ul>
+                    </li>
+                    <li>Each number is independently generated to prevent any patterns or correlations</li>
+                </ol>
+
+                <h3>Security Features:</h3>
+                <ol>
+                    <li><strong>Proof System:</strong> Every roll is verifiable and tamper-evident</li>
+                    <li><strong>Audit Trail:</strong> Complete history with cryptographic proofs</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const maxRangeInput = document.getElementById('maxRange');
+        const countInput = document.getElementById('count');
+        const generateBtn = document.getElementById('generateBtn');
+
+        function validateInputs() {
+            const maxRange = parseInt(maxRangeInput.value);
+            const count = parseInt(countInput.value);
+            generateBtn.disabled = maxRange < 1 || count < 1 || count > 100 || isNaN(maxRange) || isNaN(count);
+        }
+
+        maxRangeInput.addEventListener('input', validateInputs);
+        countInput.addEventListener('input', validateInputs);
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        function createParticles(element) {
+            const wrapper = element.parentElement;
+            
+            // Create multiple particles
+            for (let i = 0; i < 30; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                
+                // Random initial position around the number
+                const angle = (Math.random() * 360) * (Math.PI / 180);
+                const distance = Math.random() * 20;
+                const startX = Math.cos(angle) * distance;
+                const startY = Math.sin(angle) * distance;
+                
+                // Set particle position relative to the center of the number
+                particle.style.left = `calc(50% + ${startX}px)`;
+                particle.style.top = `calc(50% + ${startY}px)`;
+                
+                // Random size with more variation
+                const size = Math.random() * 6 + 4;
+                particle.style.width = size + 'px';
+                particle.style.height = size + 'px';
+                
+                // Generate random bounce points
+                const tx1 = (Math.random() - 0.5) * 60;
+                const ty1 = (Math.random() - 0.5) * 60;
+                const tx2 = (Math.random() - 0.5) * 80;
+                const ty2 = (Math.random() - 0.5) * 80;
+                const tx3 = (Math.random() - 0.5) * 100;
+                const ty3 = (Math.random() - 0.5) * 100;
+                const tx4 = (Math.random() - 0.5) * 120;
+                const ty4 = (Math.random() - 0.5) * 120;
+                const tx5 = (Math.random() - 0.5) * 140;
+                const ty5 = (Math.random() - 0.5) * 140;
+                
+                // Set custom properties for the animation
+                particle.style.setProperty('--tx1', `${tx1}px`);
+                particle.style.setProperty('--ty1', `${ty1}px`);
+                particle.style.setProperty('--tx2', `${tx2}px`);
+                particle.style.setProperty('--ty2', `${ty2}px`);
+                particle.style.setProperty('--tx3', `${tx3}px`);
+                particle.style.setProperty('--ty3', `${ty3}px`);
+                particle.style.setProperty('--tx4', `${tx4}px`);
+                particle.style.setProperty('--ty4', `${ty4}px`);
+                particle.style.setProperty('--tx5', `${tx5}px`);
+                particle.style.setProperty('--ty5', `${ty5}px`);
+                
+                // Random animation duration
+                const duration = Math.random() * 0.5 + 1;
+                particle.style.animation = `particle ${duration}s cubic-bezier(0.45, 0.05, 0.55, 0.95) forwards`;
+                
+                wrapper.appendChild(particle);
+                
+                // Remove particle after animation
+                setTimeout(() => {
+                    particle.remove();
+                }, duration * 1000);
+            }
+        }
+
+        async function animateRolling(numbersDiv, count, maxRange) {
+            numbersDiv.innerHTML = '';
+            const numberElements = [];
+            
+            // Create rolling number elements
+            for (let i = 0; i < count; i++) {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'number-wrapper';
+                const numberElement = document.createElement('div');
+                numberElement.className = 'number rolling';
+                numberElement.textContent = '1';
+                wrapper.appendChild(numberElement);
+                numbersDiv.appendChild(wrapper);
+                numberElements.push(numberElement);
+            }
+
+            // Animate random numbers while rolling
+            const rollInterval = setInterval(() => {
+                numberElements.forEach(element => {
+                    element.textContent = Math.floor(Math.random() * maxRange) + 1;
+                });
+            }, 50);
+
+            // Wait for 3 seconds
+            await sleep(3000);
+
+            // Clear the rolling interval
+            clearInterval(rollInterval);
+            return numberElements;
+        }
+
+        async function generateNumbers() {
+            const maxRange = parseInt(maxRangeInput.value);
+            const count = parseInt(countInput.value);
+            
+            if (maxRange < 1) {
+                showError('Maximum number must be at least 1');
+                return;
+            }
+            if (count < 1 || count > 100) {
+                showError('Number of rolls must be between 1 and 100');
+                return;
+            }
+
+            generateBtn.disabled = true;
+            const numbersDiv = document.getElementById('numbers');
+            const resultText = document.querySelector('#result p');
+            resultText.textContent = 'Rolling the dice...';
+
+            // Start the rolling animation
+            const numberElements = await animateRolling(numbersDiv, count, maxRange);
+
+            // Make the actual API call
+            try {
+                const response = await fetch('/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        maxRange: maxRange,
+                        count: count
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (data.success && Array.isArray(data.numbers)) {
+                    // Remove rolling animation and show final numbers
+                    numberElements.forEach((element, index) => {
+                        element.className = 'number appear';
+                        element.textContent = data.numbers[index];
+                        // Add slight delay between each number's particles
+                        setTimeout(() => {
+                            createParticles(element);
+                        }, index * 100);
+                    });
+                    resultText.textContent = `Generated ${count} number${count > 1 ? 's' : ''} between 1 and ${maxRange}`;
+
+                    // Add new row to history table
+                    const historyTableBody = document.getElementById('historyTableBody');
+                    const newRow = document.createElement('tr');
+                    newRow.innerHTML = createHistoryRow(data, maxRange, count);
+                    historyTableBody.insertBefore(newRow, historyTableBody.firstChild);
+                } else {
+                    showError(data.error || 'Invalid response format');
+                }
+            } catch (error) {
+                console.error('Error details:', error);
+                showError('Error generating numbers: ' + error.message);
+            } finally {
+                generateBtn.disabled = false;
+            }
+        }
+
+        function showError(message) {
+            console.error('Error message:', message);
+            const numbersDiv = document.getElementById('numbers');
+            numbersDiv.innerHTML = `<div class="error">${message}</div>`;
+        }
+
+        // Add verification functions
+        function openVerificationModal(rollId) {
+            const modal = document.getElementById('verificationModal');
+            modal.style.display = 'flex';
+            verifyRoll(rollId);
+        }
+
+        function closeVerificationModal() {
+            const modal = document.getElementById('verificationModal');
+            modal.style.display = 'none';
+        }
+
+        async function verifyRoll(rollId) {
+            const resultsDiv = document.getElementById('verificationResults');
+            resultsDiv.innerHTML = '<p>Verifying roll...</p>';
+
+            try {
+                const response = await fetch(`/verify/${rollId}`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch verification data');
+                }
+
+                const data = await response.json();
+                let html = '<ul class="verification-list">';
+                
+                data.verifications.forEach((v, index) => {
+                    const statusClass = v.valid ? 'valid' : 'invalid';
+                    html += `
+                        <li class="verification-item ${statusClass}">
+                            <div class="verification-status ${statusClass}">
+                                Number ${v.number}: ${v.valid ? '✓ Valid' : '✗ Invalid'}
+                            </div>
+                            <div class="verification-details">
+                                <div>Timestamp: ${v.timestamp}</div>
+                                <div>Nonce: ${v.nonce}</div>
+                                <div>Expected Hash: ${v.expected_hash}</div>
+                                <div>Computed Hash: ${v.computed_hash}</div>
+                            </div>
+                        </li>
+                    `;
+                });
+                
+                html += '</ul>';
+                resultsDiv.innerHTML = html;
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error">Error verifying roll: ${error.message}</div>`;
+            }
+        }
+
+        // Update the history table row creation
+        function createHistoryRow(data, maxRange, count) {
+            return `
+                <td>${data.rollId}</td>
+                <td>${data.timestamp}</td>
+                <td>1-${maxRange}</td>
+                <td>${count}</td>
+                <td class="numbers-cell" data-numbers="${data.numbers.join(', ')}">${data.numbers.join(', ')}</td>
+                <td class="action-cell">
+                    <a href="/download/${data.rollId}" class="download-link">Download CSV</a>
+                    <button onclick="openVerificationModal(${data.rollId})" class="verify-button">Verify</button>
+                </td>
+            `;
+        }
+
+        function openHowToVerifyModal() {
+            const modal = document.getElementById('howToVerifyModal');
+            modal.style.display = 'flex';
+        }
+
+        function closeHowToVerifyModal() {
+            const modal = document.getElementById('howToVerifyModal');
+            modal.style.display = 'none';
+        }
+
+        function openHowGeneratedModal() {
+            const modal = document.getElementById('howGeneratedModal');
+            modal.style.display = 'flex';
+        }
+
+        function closeHowGeneratedModal() {
+            const modal = document.getElementById('howGeneratedModal');
+            modal.style.display = 'none';
+        }
+    </script>
+</body>
+</html> 
