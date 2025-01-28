@@ -1,15 +1,14 @@
 # Cambria Random Number Generator
 
-A medieval-themed web application that generates cryptographically secure random numbers using Python's `secrets` module. Features a responsive, pixel-art style interface inspired by the Cambria aesthetic.
+A Cambria-themed web application that generates cryptographically secure random numbers using Python's `secrets` module. Features a responsive, pixel-art style interface inspired by the Cambria aesthetic.
 
 ## Features
 
 - Cryptographically secure random number generation
-- Medieval/fantasy-themed UI with pixel art styling
+- Cambria-themed UI with pixel art styling
 - Configurable number range and roll count
 - Responsive design that works on all devices
-- Rate limiting for API protection
-- Security headers and CSP implementation
+- Rate limiting
 
 ## Requirements
 
@@ -48,7 +47,6 @@ python app.py
 
 - Cryptographically secure random generation using `secrets` module
 - Rate limiting (10 rolls per minute, 50 per hour, 200 per day)
-- Content Security Policy (CSP) implementation
 - Input validation and sanitization
 - Error handling and logging
 
@@ -56,9 +54,9 @@ python app.py
 
 The application is built with:
 - Flask for the backend
-- Vanilla JavaScript for frontend interactions
-- Custom CSS for medieval/fantasy styling
-- Google Fonts (MedievalSharp) for thematic typography
+- JavaScript for frontend interactions
+- CSS for Cambria styling
+- Google Fonts (MedievalSharp)
 
 ## API Endpoints
 
@@ -83,8 +81,6 @@ The application is built with:
   ```
 
 ## Deployment
-
-The application can be deployed using several methods:
 
 1. **Development**:
 ```bash
