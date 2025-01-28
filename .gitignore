@@ -36,4 +36,10 @@ wheels/
 
 # Logs
 *.log
-logs/ 
+logs/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+instance/ 

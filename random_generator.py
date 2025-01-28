@@ -30,7 +30,7 @@ def generate_random_numbers(max_range=1, count=1):
 
     # Ensure max_range and count are valid
     max_range = max(1, int(max_range))
-    count = max(1, min(100, int(count)))  # Limit count between 1 and 100
+    count = max(1, min(100, int(count)))  # Limit number of rolls between 1 and 100
     
     numbers = []
     proofs = []
