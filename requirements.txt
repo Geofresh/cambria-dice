@@ -1,6 +1,5 @@
 # Project uses Python's built-in secrets module for random generation 
 Flask==3.0.0
-# Project uses Python's built-in secrets module for random generation 
 gunicorn==21.2.0
 Werkzeug==3.0.1
 Flask-Limiter==3.5.0
