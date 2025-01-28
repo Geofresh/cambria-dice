@@ -3,14 +3,38 @@ from random_generator import generate_random_numbers, verify_proof
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_talisman import Talisman
+from flask_login import LoginManager, login_required, current_user
+from models import db, User
+from auth import auth, init_admin
 import logging
 import json
 from datetime import datetime
 import io
 import csv
 import hashlib
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__, static_url_path='/static')
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///cambria.db')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Initialize extensions
+db.init_app(app)
+login_manager = LoginManager()
+login_manager.login_view = 'auth.login'
+login_manager.init_app(app)
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+# Register blueprints
+app.register_blueprint(auth)
+
 logging.basicConfig(level=logging.DEBUG)
 
 # Store roll history in memory (consider using a database for production)
@@ -39,11 +63,19 @@ Talisman(app,
 
 @app.route('/')
 def index():
-    return render_template('index.html', roll_history=roll_history)
+    return render_template('index.html', 
+                         roll_history=roll_history, 
+                         is_admin=current_user.is_authenticated and current_user.is_admin)
 
 @app.route('/generate', methods=['POST'])
-@limiter.limit("10 per minute")
+@login_required
 def generate():
+    if not current_user.is_admin:
+        return jsonify({
+            'error': 'Unauthorized. Only administrators can generate rolls.',
+            'success': False
+        }), 403
+
     try:
         app.logger.debug(f"Received request: {request.get_data(as_text=True)}")
         data = request.get_json()
@@ -166,9 +198,27 @@ def verify_roll(roll_id):
             'success': False
         }), 400
 
+def create_tables():
+    with app.app_context():
+        app.logger.info("Creating database tables...")
+        db.create_all()
+        app.logger.info("Tables created successfully")
+        
+        # Initialize admin user
+        app.logger.info("Initializing admin user...")
+        try:
+            init_admin()
+            app.logger.info("Admin user initialized successfully")
+        except Exception as e:
+            app.logger.error(f"Error initializing admin user: {str(e)}")
+            raise
+
 if __name__ == '__main__':
-    # debugging
+    logging.basicConfig(level=logging.INFO)
+    create_tables()
     app.run(debug=True)
 else:
-    # change before deployment
+    # Create tables when running with gunicorn
+    logging.basicConfig(level=logging.INFO)
+    create_tables()
     app.run(host='0.0.0.0', port=8080) 
