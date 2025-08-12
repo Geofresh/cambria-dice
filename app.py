@@ -55,7 +55,7 @@ Talisman(app,
         'script-src': ["'self'", "'unsafe-inline'"],
         'connect-src': ["'self'"]
     },
-    force_https=False  # Disable HTTPS requirement for local development
+    force_https=os.getenv('FLASK_ENV', 'production') == 'production'  # Enable HTTPS in production
 )
 
 @app.route('/')
